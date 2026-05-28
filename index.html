@@ -116,6 +116,18 @@
   footer span{color:var(--text-muted);}
 
   @keyframes spin{to{transform:rotate(360deg);}}
+  .score-dropdown{margin-bottom:.8rem;}
+  .score-dropdown-btn{width:100%;background:var(--dark4);border:1px solid var(--border-subtle);border-radius:8px;padding:8px 12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;color:var(--text-muted);font-size:13px;font-family:"Sarabun",sans-serif;transition:all .2s;}
+  .score-dropdown-btn:hover{border-color:var(--gold);color:var(--gold);}
+  .score-dropdown-btn .arrow{transition:transform .2s;font-size:10px;}
+  .score-dropdown-btn.open .arrow{transform:rotate(180deg);}
+  .score-dropdown-content{display:none;padding:10px 0 4px;border-top:1px solid var(--border-subtle);margin-top:6px;}
+  .score-dropdown-content.open{display:block;}
+  .score-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .score-label{font-size:11px;color:var(--text-muted);width:90px;flex-shrink:0;line-height:1.3;}
+  .score-track{flex:1;height:5px;background:var(--dark3);border-radius:3px;overflow:hidden;}
+  .score-fill{height:100%;border-radius:3px;background:var(--gold);}
+  .score-val{font-size:11px;color:var(--gold);white-space:nowrap;width:36px;text-align:right;}
   .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(201,168,76,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 </style>
 </head>
@@ -211,26 +223,50 @@ function scoreColor(s){
   return '#9A9588';
 }
 
+let scoreDropdownCounter = 0;
 function renderScoreBars(r){
+  const id = 'sd' + (scoreDropdownCounter++);
   const items = [
-    {label:'คุณภาพรีวิว', val:r.scoreRating||0, max:25},
-    {label:'เหมาะกลุ่ม', val:r.scoreGroup||0, max:20},
-    {label:'ราคา', val:r.scorePrice||0, max:15},
-    {label:'เดินทาง', val:r.scoreTravel||0, max:15},
-    {label:'ข้อมูล', val:r.scoreData||0, max:15},
-    {label:'ความพิเศษ', val:r.scoreUnique||0, max:10},
+    {label:'คุณภาพรีวิว', sub:'Rating & Reviews', val:r.scoreRating||0, max:25},
+    {label:'เหมาะกลุ่ม', sub:'Group Suitability', val:r.scoreGroup||0, max:20},
+    {label:'ความคุ้มราคา', sub:'Price Suitability', val:r.scorePrice||0, max:15},
+    {label:'เดินทางสะดวก', sub:'Travel Convenience', val:r.scoreTravel||0, max:15},
+    {label:'ข้อมูลครบ', sub:'Data Completeness', val:r.scoreData||0, max:15},
+    {label:'ความพิเศษ', sub:'Uniqueness', val:r.scoreUnique||0, max:10},
   ];
-  return items.map(i=>`
-    <div class="score-bar-row">
-      <span class="score-bar-label">${i.label}</span>
-      <div class="score-bar-track"><div class="score-bar-fill" style="width:${(i.val/i.max*100).toFixed(0)}%"></div></div>
-      <span class="score-bar-val">${i.val}/${i.max}</span>
-    </div>`).join('');
+  const total = r.totalScore || 0;
+  const pct = (total/100*100).toFixed(0);
+  return `<div class="score-dropdown">
+    <button class="score-dropdown-btn" onclick="toggleScore('${id}')">
+      <span>📊 ดูคะแนนแต่ละเกณฑ์</span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <span style="color:${scoreColor(total)};font-weight:700">${total}/100</span>
+        <span class="arrow">▼</span>
+      </span>
+    </button>
+    <div class="score-dropdown-content" id="${id}">
+      ${items.map(i=>`
+        <div class="score-row">
+          <div class="score-label"><div>${i.label}</div><div style="font-size:10px;color:var(--text-dim)">${i.sub}</div></div>
+          <div class="score-track"><div class="score-fill" style="width:${(i.val/i.max*100).toFixed(0)}%"></div></div>
+          <div class="score-val">${i.val}/${i.max}</div>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+function toggleScore(id){
+  const content = document.getElementById(id);
+  const btn = content ? content.previousElementSibling : null;
+  if(content){ content.classList.toggle("open"); if(btn) btn.classList.toggle("open"); }
 }
 
 function renderProsCons(r){
-  const pros = Array.isArray(r.pros) ? r.pros : (r.pros||'').split('|').map(s=>s.trim()).filter(Boolean);
-  const cons = Array.isArray(r.cons) ? r.cons : (r.cons||'').split('|').map(s=>s.trim()).filter(Boolean);
+  let pros = [];
+  if (Array.isArray(r.pros)) pros = r.pros;
+  else if (typeof r.pros === 'string') pros = r.pros.split(/[|,]/).map(s=>s.trim()).filter(Boolean);
+  let cons = [];
+  if (Array.isArray(r.cons)) cons = r.cons;
+  else if (typeof r.cons === 'string') cons = r.cons.split(/[|,]/).map(s=>s.trim()).filter(Boolean);
   if(!pros.length && !cons.length) return '';
   return `<div class="pros-cons">
     <div class="pros-box"><div class="label">✅ ข้อดี</div><ul>${pros.slice(0,3).map(p=>`<li>${p}</li>`).join('')}</ul></div>
@@ -301,7 +337,10 @@ function renderTable(){
           <span style="font-size:11px;color:var(--text-dim)">${r.reviews||''}</span>
         </div>
       </td>
-      <td class="score-cell" style="color:${scoreColor(r.totalScore||0)}">${r.totalScore||'—'}</td>
+      <td>
+        <span class="score-cell" style="color:${scoreColor(r.totalScore||0)};font-weight:700">${r.totalScore||'—'}</span>
+        ${r.totalScore ? `<div style="font-size:10px;color:var(--text-dim);margin-top:2px">/100</div>` : ''}
+      </td>
       <td>
         ${(r.links||[]).map(l=>`<a href="${l.url}" target="_blank" style="font-size:11px;display:block;margin-bottom:2px;padding:2px 6px;background:var(--dark4);border-radius:4px;color:var(--text-muted);border:1px solid var(--border-subtle)">${l.label}</a>`).join('')}
         ${!r.links||!r.links.length ? '<span style="color:var(--text-dim);font-size:11px">—</span>' : ''}
