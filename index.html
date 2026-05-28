@@ -259,7 +259,14 @@ function renderTop3(){
       ${r.totalScore ? renderScoreBars(r) : ''}
       ${renderProsCons(r)}
       <div class="card-price">ราคา/คน: <strong>${r.price||'ไม่ระบุ'}</strong></div>
-      ${r.links&&r.links.length ? `<div class="evidence-links">${r.links.map(l=>`<a href="${l.url}" target="_blank">🔗 ${l.label}</a>`).join('')}</div>` : ''}
+      <div style="margin-top:.8rem">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;letter-spacing:.06em;text-transform:uppercase">แหล่งอ้างอิง</div>
+        <div class="evidence-links">
+          ${(r.links||[]).map(l=>`<a href="${l.url}" target="_blank">🔗 ${l.label}</a>`).join('')}
+          ${(!r.links||!r.links.length) ? '<span style="color:var(--text-dim);font-size:12px">ไม่มีลิงก์</span>' : ''}
+        </div>
+        ${r.source ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px">ข้อมูลจาก: ${r.source}</div>` : ''}
+      </div>
     </div>`).join('')
     : '<p style="color:var(--text-muted)">ไม่มีข้อมูลในโซนนี้</p>';
 }
@@ -295,7 +302,10 @@ function renderTable(){
         </div>
       </td>
       <td class="score-cell" style="color:${scoreColor(r.totalScore||0)}">${r.totalScore||'—'}</td>
-      <td>${(r.links||[]).map(l=>`<a href="${l.url}" target="_blank" style="font-size:12px">${l.label}</a>`).join('<br>')}</td>
+      <td>
+        ${(r.links||[]).map(l=>`<a href="${l.url}" target="_blank" style="font-size:11px;display:block;margin-bottom:2px;padding:2px 6px;background:var(--dark4);border-radius:4px;color:var(--text-muted);border:1px solid var(--border-subtle)">${l.label}</a>`).join('')}
+        ${!r.links||!r.links.length ? '<span style="color:var(--text-dim);font-size:11px">—</span>' : ''}
+      </td>
     </tr>`).join('');
   updateStats(rows);
 }
